@@ -2,7 +2,7 @@ import sqlite3
 from sqlite3 import Connection as SqliteConnection
 
 class SqliteConnectionHandle:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__connection_string = "storage.db"
         self.__conn = None
 
@@ -13,6 +13,6 @@ class SqliteConnectionHandle:
         )
         self.__conn = conn
         return conn
-    
+
     def get_connection(self) -> SqliteConnection:
         return self.__conn

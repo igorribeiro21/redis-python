@@ -3,6 +3,7 @@ from src.models.redis.repository.interfaces.redis_repository import RedisReposit
 from src.http_types.http_request import HttpRequest
 from src.http_types.http_response import HttpResponse
 
+
 class ProductFinder:
     def __init__(
             self,
@@ -18,28 +19,29 @@ class ProductFinder:
 
         product = self.__find_in_cache(product_name)
         if not product:
-            product = self.__find_in_sqlite(product_name)
+            product = self.__find_in_sql(product_name)
             self.__insert_in_cache(product)
-        
+
         return self.__format_response(product)
 
     def __find_in_cache(self, product_name: str) -> tuple:
         product_infos = self.__redis_repo.get_key(product_name)
         if product_infos:
-            product_info_list = product_infos.split(",") # price,quantity -> ["price", "quantity"]
-            return (0, product_name, product_info_list[0], product_info_list[1])
-        
+            product_infos_list = product_infos.split(",") # price,quantity -> [price, quantity]
+            return (0, product_name, float(product_infos_list[0]), int(product_infos_list[1]))
+
         return None
-    
-    def __find_in_sqlite(self, product_name: str) -> tuple:
-        product = self.__products_repo.find_by_name(product_name)
-        if not product: raise Exception("Produto não encontrado!")
+
+    def __find_in_sql(self, product_name: str) -> tuple:
+        product = self.__products_repo.find_product_by_name(product_name)
+        if not product:
+            raise Exception("Produto nao encontrado!")
 
         return product
-    
+
     def __insert_in_cache(self, product: tuple) -> None:
         product_name = product[1]
-        value = f"{product[2]},{product[3]}" # price,quantity
+        value = f"{product[2]},{product[3]}" # 1999.99,10
         self.__redis_repo.insert_ex(product_name, value, ex=60)
 
     def __format_response(self, product: tuple) -> HttpResponse:
@@ -47,7 +49,7 @@ class ProductFinder:
             status_code=200,
             body={
                 "type": "Product",
-                "quantity": 1,
+                "count": 1,
                 "attributes": {
                     "name": product[1],
                     "price": product[2],
@@ -55,4 +57,3 @@ class ProductFinder:
                 }
             }
         )
-            
